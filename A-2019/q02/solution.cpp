@@ -1,4 +1,3 @@
-
 // In the name of God
 // Saurav Bhattarai
 
@@ -30,49 +29,107 @@ using namespace std;
 #define newline cout<<'\n'
 #define pb(x) push_back(x)
 
-inline int m_dist(int x0, int y0, int x1, int y1)
-{
-    return abs(x0 - x1) + abs(y0 - y1);
-}
-
-inline int min_dist(int x, int y) { return (x > y ? y : x); }
-
-
-inline int max_dist(int x, int y) { return (x < y ? y : x); }
 
 
 int grid[250][250];
-int d_grid[250][250];
-int R, C, i, j, k, l, preresult;
+int dist[250][250];
+int color[250][250];
+int R, C, i, j, d, lowerbound, upperbound;
+int dist1, dist2, dist3, dist4;
+pair< pii, int > top;
 
-inline void new_office(int a, int b)
+inline void init_color()
 {
-    grid[a][b] = 1;
-    preresult = 0;
-    rep(k, 0, R)
+    rep(i, 0, R)
     {
-        rep(l, 0, C)
+        rep(j, 0, C)
         {
-            if (grid[k][l] == 0) 
-            preresult = max_dist(preresult, min_dist(d_grid[k][l], m_dist(a, b, k, l)));
+            color[i][j] = 0;
         }
     }
-    grid[a][b] = 0;
+    return;
+}
+
+inline void calc_dist()
+{
+    
+    queue< pair< pii, int >> q;
+    init_color();
+    //add all the 1s to Queue
+    rep(i, 0, R)
+    {
+        rep(j, 0, C)
+        {
+            if (grid[i][j]) 
+            {
+                q.push(make_pair(make_pair(i, j), 0));
+                color[i][j] = 1;
+                dist[i][j] = 0;
+            }
+        }
+    }
+    
+    //do dfs
+    while (!q.empty())
+    {
+        top = q.front();
+        q.pop();
+        d = top.second;
+        i = top.first.first;
+        j = top.first.second;
+        upperbound = d;
+        if (i + 1 < R && !color[i + 1][j])
+        {
+            q.push(make_pair(make_pair(i + 1, j), d + 1));
+            color[i + 1][j] = 1;
+            dist[i + 1][j] = d + 1;
+        }
+        if (i - 1 >= 0 && !color[i - 1][j])
+        {
+            q.push(make_pair(make_pair(i - 1, j), d + 1));
+            color[i - 1][j] = 1;
+            dist[i - 1][j] = d + 1;
+        }
+        if (j + 1 < C && !color[i][j + 1])
+        {
+            q.push(make_pair(make_pair(i, j + 1), d + 1));
+            color[i][j + 1] = 1;
+            dist[i][j + 1] = d + 1;
+        }
+        if (j - 1 >= 0 && !color[i][j - 1])
+        {
+            q.push(make_pair(make_pair(i, j - 1), d + 1));
+            color[i][j - 1] = 1;
+            dist[i][j - 1] = d + 1;
+        }
+        
+    }    
     return;
 }
 
 
+inline int max(int a, int b, int c, int d)
+{
+    if (a > b) b = a;
+    if (b > c) c = b;
+    if (c > d) d = c;
+    return d;
+}
+
+inline int max_2(int a, int b)
+{
+    return (a > b ? a : b);
+}
+
 int main()
 {
-    int T, result, k, l, cnum=0;
-    bool haszero;
+    int T, K, cnum=0, add, diff, mindiff, maxdiff, minadd, maxadd, intermidadd, intermiddiff;
+    bool found;
     char arr[251];
     cin>>T;
     while(T--)
     {
-        result=-1;
         ++cnum;
-        haszero=false;
         cin>>R>>C;
         rep(i,0,R)
         {
@@ -83,53 +140,57 @@ int main()
             }
         }
         
-        rep(i, 0, R)
+        calc_dist();
+        lowerbound = 0;
+        while (lowerbound < upperbound)
         {
-            rep(j, 0, C)
+            mindiff = 501;
+            maxdiff = -501;
+            minadd = 501;
+            maxadd = -501;
+            K = (lowerbound + upperbound)/ 2;
+            rep(i, 0, R)
             {
-                if (grid[i][j] == 0) haszero = true;
-            }
-        }
-        
-        if (!haszero)
-        {
-            cout<<"Case #" << cnum << ": " << 0 << '\n';
-            continue;
-        }
-        
-        rep(i, 0, R)
-        {
-            rep(j, 0, C)
-            {
-                if (grid[i][j]==0)
+                rep(j, 0, C)
                 {
-                    preresult = 501;
-                    rep(k, 0, R)
+                    if (dist[i][j] > K)
                     {
-                        rep (l, 0, C)
-                        {
-                            if (grid[k][l] == 1)
-                                preresult = min_dist(preresult, m_dist(i, j, k, l));
-                        }
+                        add = i + j;
+                        diff = i - j;
+                        if (add > maxadd) maxadd = add;
+                        if (add < minadd) minadd = add;
+                        if (diff > maxdiff) maxdiff = diff;
+                        if (diff < mindiff) mindiff = diff;
                     }
-                    d_grid[i][j] = preresult;
-                    result = max_dist(result, preresult);
-                }       
-            }
-        }
-        
-        rep(i, 0, R)
-        {
-            rep(j, 0, C)
-            {
-                if (grid[i][j] == 0)
-                {
-                    new_office(i, j);
-                    result = min_dist(preresult, result);
                 }
             }
+            found = false;
+            rep(i, 0, R)
+            {
+                rep(j, 0, C)
+                {
+                    if (grid[i][j] == 0) // add a delivery office
+                    {
+                        intermidadd = i + j;
+                        intermiddiff = i - j;
+                        dist1 = max_2(abs(maxadd - intermidadd), abs(maxdiff - intermiddiff));
+                        dist2 = max_2(abs(maxadd - intermidadd), abs(mindiff - intermiddiff));
+                        dist3 = max_2(abs(minadd - intermidadd), abs(maxdiff - intermiddiff));
+                        dist4 = max_2(abs(minadd - intermidadd), abs(mindiff - intermiddiff));
+                        if (max(dist1, dist2, dist3, dist4) <= K)
+                        {
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+                if (found) break;
+            }
+            
+            if (found) upperbound = K;
+            else lowerbound = K + 1;
         }
-        cout<<"Case #" << cnum << ": " << result << '\n';
+        cout<<"Case #" << cnum << ": " << upperbound << '\n';
     }
     return 0;
 }
